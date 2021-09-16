@@ -35,28 +35,19 @@ is_directory(const char* path) {
 
 char*
 file_perm_str(struct stat f_stat) {
-  char* y = malloc(8 + (10 * sizeof(light_white)) * sizeof(char));
-  strcat(y, light_green);
-  strcat(y, (f_stat.st_mode & S_IRUSR) ? "r" : "-");
-  strcat(y, light_yellow);
-  strcat(y, (f_stat.st_mode & S_IWUSR) ? "w" : "-");
-  strcat(y, light_red);
-  strcat(y, (f_stat.st_mode & S_IXUSR) ? "x" : "-");
-  strcat(y, light_green);
-  strcat(y, (f_stat.st_mode & S_IRGRP) ? "r" : "-");
-  strcat(y, light_yellow);
-  strcat(y, (f_stat.st_mode & S_IWGRP) ? "w" : "-");
-  strcat(y, light_red);
-  strcat(y, (f_stat.st_mode & S_IXGRP) ? "x" : "-");
-  strcat(y, light_green);
-  strcat(y, (f_stat.st_mode & S_IROTH) ? "r" : "-");
-  strcat(y, light_yellow);
-  strcat(y, (f_stat.st_mode & S_IWOTH) ? "w" : "-");
-  strcat(y, light_red);
-  strcat(y, (f_stat.st_mode & S_IXOTH) ? "x" : "-");
-  strcat(y, end);
+  static char perms_array[(8 + (10 * sizeof(light_white)) * sizeof(char))];
+  sprintf(perms_array, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", light_green,
+          (f_stat.st_mode & S_IRUSR) ? "r" : "-", light_yellow,
+          (f_stat.st_mode & S_IWUSR) ? "w" : "-", light_red,
+          (f_stat.st_mode & S_IXUSR) ? "x" : "-", light_green,
+          (f_stat.st_mode & S_IRGRP) ? "r" : "-", light_yellow,
+          (f_stat.st_mode & S_IWGRP) ? "w" : "-", light_red,
+          (f_stat.st_mode & S_IXGRP) ? "x" : "-", light_green,
+          (f_stat.st_mode & S_IROTH) ? "r" : "-", light_yellow,
+          (f_stat.st_mode & S_IWOTH) ? "w" : "-", light_red,
+          (f_stat.st_mode & S_IXOTH) ? "x" : "-", end);
 
-  return y;
+  return perms_array;
 }
 
 void
@@ -126,8 +117,6 @@ iterate_dir(const char* path) {
 
     printf("%s%c%s ", f_type_res.color, f_type_res.letter, perms);
     printf("%s: %s\n", buf, entry->d_name);
-
-    free(perms);
   }
 
   closedir(directory);
