@@ -108,13 +108,14 @@ struct file {
 
 void
 handle_individual_file(struct file f, int longest_group, int longest_owner) {
-  printf("%s%c%s %s ", f.info.color, f.info.letter, f.perms, f.group);
+  printf("%s%c%s %s%s ", f.info.color, f.info.letter, f.perms, dark_yellow,
+         f.group);
   for (int i = 0; i < (longest_group - strlen(f.group)); i++)
     printf(" ");
   printf("%s ", f.owner);
   for (int i = 0; i < (longest_owner - strlen(f.owner)); i++)
     printf(" ");
-  printf("%s\n", f.filename);
+  printf("%s%s\n", f.info.color, f.filename);
 }
 
 void
