@@ -98,12 +98,36 @@ f_type(mode_t mode, struct owner_info* owner) {
   }
 }
 
+struct file {
+  char* owner;
+  char* group;
+  char* filename;
+  char* perms;
+  struct owner_info info;
+};
+
+void
+handle_individual_file(struct file f, int longest_group, int longest_owner) {
+  printf("%s%c%s %s ", f.info.color, f.info.letter, f.perms, f.group);
+  for (int i = 0; i < (longest_group - strlen(f.group)); i++)
+    printf(" ");
+  printf("%s ", f.owner);
+  for (int i = 0; i < (longest_owner - strlen(f.owner)); i++)
+    printf(" ");
+  printf("%s\n", f.filename);
+}
+
 void
 iterate_dir(const char* path) {
   struct dirent* entry;
 
   /* Path has already been validated */
   DIR* directory = opendir(path);
+
+  struct file* files = malloc(10 * sizeof(struct file));
+  int len = 10, pos = 0;
+
+  int longest_group = 0, longest_owner = 0;
 
   while ((entry = readdir(directory))) {
     char buf[PATH_MAX + 1];
@@ -120,12 +144,30 @@ iterate_dir(const char* path) {
     struct passwd* pw = getpwuid(stat_res.st_uid);
     struct group* gr = getgrgid(stat_res.st_gid);
 
-    printf("%s%c%s ", f_type_res.color, f_type_res.letter, perms);
-    printf("%s %s ", gr->gr_name, pw->pw_name);
-    printf("%s: %s\n", buf, entry->d_name);
+    if (strlen(gr->gr_name) > longest_group)
+      longest_group = strlen(gr->gr_name);
+
+    if (strlen(pw->pw_name) > longest_owner)
+      longest_owner = strlen(pw->pw_name);
+
+    if (pos >= len)
+      files = realloc(files,
+                      (len * sizeof(struct file)) + (5 * sizeof(struct file)));
+
+    files[pos++] = (struct file){.owner = pw->pw_name,
+                                 .group = gr->gr_name,
+                                 .info = f_type_res,
+                                 .perms = perms,
+                                 .filename = entry->d_name};
+    len++;
   }
 
+  for (int i = 0; i < pos; i++)
+    handle_individual_file(files[i], longest_group, longest_owner);
+
   closedir(directory);
+
+  free(files);
 }
 
 int
