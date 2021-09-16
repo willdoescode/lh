@@ -1,6 +1,8 @@
 #include <dirent.h>
 #include <errno.h>
+#include <grp.h>
 #include <limits.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -115,7 +117,11 @@ iterate_dir(const char* path) {
 
     char* perms = file_perm_str(stat_res);
 
+    struct passwd* pw = getpwuid(stat_res.st_uid);
+    struct group* gr = getgrgid(stat_res.st_gid);
+
     printf("%s%c%s ", f_type_res.color, f_type_res.letter, perms);
+    printf("%s %s ", gr->gr_name, pw->pw_name);
     printf("%s: %s\n", buf, entry->d_name);
   }
 
