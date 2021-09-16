@@ -35,17 +35,28 @@ is_directory(const char* path) {
 
 char*
 file_perm_str(struct stat f_stat) {
-  char* x = malloc(8 * sizeof(char));
-  x[0] = (f_stat.st_mode & S_IRUSR) ? 'r' : '-';
-  x[1] = (f_stat.st_mode & S_IWUSR) ? 'w' : '-';
-  x[2] = (f_stat.st_mode & S_IXUSR) ? 'x' : '-';
-  x[3] = (f_stat.st_mode & S_IRGRP) ? 'r' : '-';
-  x[4] = (f_stat.st_mode & S_IWGRP) ? 'w' : '-';
-  x[5] = (f_stat.st_mode & S_IXGRP) ? 'x' : '-';
-  x[6] = (f_stat.st_mode & S_IROTH) ? 'r' : '-';
-  x[7] = (f_stat.st_mode & S_IWOTH) ? 'w' : '-';
-  x[8] = (f_stat.st_mode & S_IXOTH) ? 'x' : '-';
-  return x;
+  char* y = malloc(8 + (10 * sizeof(light_white)) * sizeof(char));
+  strcat(y, light_green);
+  strcat(y, (f_stat.st_mode & S_IRUSR) ? "r" : "-");
+  strcat(y, light_yellow);
+  strcat(y, (f_stat.st_mode & S_IWUSR) ? "w" : "-");
+  strcat(y, light_red);
+  strcat(y, (f_stat.st_mode & S_IXUSR) ? "x" : "-");
+  strcat(y, light_green);
+  strcat(y, (f_stat.st_mode & S_IRGRP) ? "r" : "-");
+  strcat(y, light_yellow);
+  strcat(y, (f_stat.st_mode & S_IWGRP) ? "w" : "-");
+  strcat(y, light_red);
+  strcat(y, (f_stat.st_mode & S_IXGRP) ? "x" : "-");
+  strcat(y, light_green);
+  strcat(y, (f_stat.st_mode & S_IROTH) ? "r" : "-");
+  strcat(y, light_yellow);
+  strcat(y, (f_stat.st_mode & S_IWOTH) ? "w" : "-");
+  strcat(y, light_red);
+  strcat(y, (f_stat.st_mode & S_IXOTH) ? "x" : "-");
+  strcat(y, end);
+
+  return y;
 }
 
 void
@@ -113,7 +124,7 @@ iterate_dir(const char* path) {
 
     char* perms = file_perm_str(stat_res);
 
-    printf("%s %s", perms, f_type_res.color);
+    printf("%s%c%s ", f_type_res.color, f_type_res.letter, perms);
     printf("%s: %s\n", buf, entry->d_name);
 
     free(perms);
@@ -123,15 +134,36 @@ iterate_dir(const char* path) {
 }
 
 int
+file_exists(char* filename) {
+  struct stat buffer;
+  return (stat(filename, &buffer) == 0);
+}
+
+void
+validate_path(char* path, int is_dir) {
+  if (file_exists(path) && !is_dir) {
+    printf("%sError: \"%s\" does not exist.\n", light_red, path);
+    exit(1);
+  }
+}
+
+int
 main(int argc, char* argv[]) {
   if (argc <= 1) {
     iterate_dir("./");
     return 0;
   }
 
-  for (size_t i = 1; i < argc; i++)
-    if (is_directory(argv[i]))
+  for (size_t i = 1; i < argc; i++) {
+    int is_dir = is_directory(argv[i]);
+    validate_path(argv[i], is_dir);
+    if (is_dir) {
       iterate_dir(argv[i]);
+      continue;
+    }
+
+    printf("%s", argv[i]);
+  }
 
   return 0;
 }
