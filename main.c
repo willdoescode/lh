@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "style.h"
@@ -103,6 +104,7 @@ struct file {
   char* group;
   char* filename;
   char* perms;
+  char* modified_time;
   struct owner_info info;
 };
 
@@ -115,7 +117,8 @@ handle_individual_file(struct file f, int longest_group, int longest_owner) {
   printf("%s ", f.owner);
   for (int i = 0; i < (longest_owner - strlen(f.owner)); i++)
     printf(" ");
-  printf("%s%s\n", f.info.color, f.filename);
+
+  printf("%s%s %s%s\n", light_blue, f.modified_time, f.info.color, f.filename);
 }
 
 void
@@ -155,10 +158,15 @@ iterate_dir(const char* path) {
       files = realloc(files,
                       (len * sizeof(struct file)) + (5 * sizeof(struct file)));
 
+    char modified_time[20];
+    strftime(modified_time, 20, "%d %b %H:%M %y",
+             localtime(&stat_res.st_mtime));
+
     files[pos++] = (struct file){.owner = pw->pw_name,
                                  .group = gr->gr_name,
                                  .info = f_type_res,
                                  .perms = perms,
+                                 .modified_time = modified_time,
                                  .filename = entry->d_name};
     len++;
   }
