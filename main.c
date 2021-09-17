@@ -214,7 +214,6 @@ main(int argc, char** argv) {
     int is_dir = is_directory(argv[i]);
     validate_path(argv[i], is_dir);
     if (is_dir) {
-      // puts(argv[i]);
       iterate_dir(argv[i]);
       continue;
     }
