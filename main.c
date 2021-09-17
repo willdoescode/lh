@@ -218,8 +218,6 @@ main(int argc, char** argv) {
       iterate_dir(argv[i]);
       continue;
     }
-
-    printf("%s", argv[i]);
   }
 
   return 0;
