@@ -118,7 +118,8 @@ handle_individual_file(struct file f, int longest_group, int longest_owner) {
   for (int i = 0; i < (longest_owner - strlen(f.owner)); i++)
     printf(" ");
 
-  printf("%s%s %s%s%s\n", light_blue, f.modified_time, f.info.color, f.filename, end);
+  printf("%s%s %s%s%s\n", light_blue, f.modified_time, f.info.color, f.filename,
+         end);
 }
 
 void
@@ -128,8 +129,9 @@ iterate_dir(const char* path) {
   /* Path has already been validated */
   DIR* directory = opendir(path);
 
+  int size = 10;
+  int position = 0;
   struct file* files = malloc(10 * sizeof(struct file));
-  int len = 10, pos = 0;
 
   int longest_group = 0, longest_owner = 0;
 
@@ -154,28 +156,32 @@ iterate_dir(const char* path) {
     if (strlen(pw->pw_name) > longest_owner)
       longest_owner = strlen(pw->pw_name);
 
-    if (pos >= len)
-      files = realloc(files,
-                      (len * sizeof(struct file)) + (5 * sizeof(struct file)));
+    if (position == size) {
+      size += 10;
+      struct file* realloc_files = realloc(files, (size * sizeof(struct file)));
+      if (realloc_files)
+        files = realloc_files;
+      else
+        printf("%sError: failed to extend array.", light_red);
+    }
 
     char modified_time[20];
-    strftime(modified_time, 20, "%d %b %H:%M %y",
-             localtime(&stat_res.st_mtime));
+    if (!strftime(modified_time, 20, "%d %b %H:%M %y",
+                  localtime(&stat_res.st_mtime)))
+      modified_time[0] = ' ';
 
-    files[pos++] = (struct file){.owner = pw->pw_name,
-                                 .group = gr->gr_name,
-                                 .info = f_type_res,
-                                 .perms = perms,
-                                 .modified_time = modified_time,
-                                 .filename = entry->d_name};
-    len++;
+    files[position++] = (struct file){.owner = pw->pw_name,
+                                      .group = gr->gr_name,
+                                      .info = f_type_res,
+                                      .perms = perms,
+                                      .modified_time = modified_time,
+                                      .filename = entry->d_name};
   }
 
-  for (int i = 0; i < pos; i++)
+  for (int i = 0; i < position; i++)
     handle_individual_file(files[i], longest_group, longest_owner);
 
   closedir(directory);
-
   free(files);
 }
 
@@ -194,7 +200,7 @@ validate_path(char* path, int is_dir) {
 }
 
 int
-main(int argc, char* argv[]) {
+main(int argc, char** argv) {
   if (argc <= 1) {
     iterate_dir("./");
     return 0;
@@ -204,6 +210,7 @@ main(int argc, char* argv[]) {
     int is_dir = is_directory(argv[i]);
     validate_path(argv[i], is_dir);
     if (is_dir) {
+      // puts(argv[i]);
       iterate_dir(argv[i]);
       continue;
     }
