@@ -38,7 +38,7 @@ is_directory(const char* path) {
 
 char*
 file_perm_str(struct stat f_stat) {
-  static char perms_array[(8 + (10 * sizeof(light_white)) * sizeof(char))];
+  static char perms_array[9 * (MAX_COLOR_LEN + 1)];
   sprintf(perms_array, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", light_green,
           (f_stat.st_mode & S_IRUSR) ? "r" : "-", light_yellow,
           (f_stat.st_mode & S_IWUSR) ? "w" : "-", light_red,
@@ -118,7 +118,7 @@ handle_individual_file(struct file f, int longest_group, int longest_owner) {
   for (int i = 0; i < (longest_owner - strlen(f.owner)); i++)
     printf(" ");
 
-  printf("%s%s %s%s\n", light_blue, f.modified_time, f.info.color, f.filename);
+  printf("%s%s %s%s%s\n", light_blue, f.modified_time, f.info.color, f.filename, end);
 }
 
 void
