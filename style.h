@@ -1,10 +1,6 @@
 #ifndef _STYLE_H_
 #define _STYLE_H_
 
-// maximum length of an escape code: 1 byte for
-// the escape character, 1 for the bracket,
-// 3 for 0;0, since that's the longest possible
-// sequence after the bracket, and one for the m
 #define MAX_COLOR_LEN 6
 
 static char* end = "\033[0;0m";

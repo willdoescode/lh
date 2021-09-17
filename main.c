@@ -129,6 +129,10 @@ iterate_dir(const char* path) {
   /* Path has already been validated */
   DIR* directory = opendir(path);
 
+  /* Skip . and .. */
+  readdir(directory);
+  readdir(directory);
+
   int size = 10;
   int position = 0;
   struct file* files = malloc(10 * sizeof(struct file));
