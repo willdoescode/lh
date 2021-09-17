@@ -118,6 +118,10 @@ handle_individual_file(struct file f, int longest_group, int longest_owner) {
 
   printf("%s%s %s%s%s\n", light_blue, f.modified_time, f.info.color, f.filename,
          end);
+
+  free(f.group);
+  free(f.owner);
+  free(f.filename);
 }
 
 void
@@ -172,12 +176,19 @@ iterate_dir(const char* path) {
                   localtime(&stat_res.st_mtime)))
       modified_time[0] = ' ';
 
-    files[position++] = (struct file){.owner = pw->pw_name,
-                                      .group = gr->gr_name,
+    char* filename = malloc(entry->d_namlen * sizeof(char));
+    char* o_name = malloc(strlen(pw->pw_name) * sizeof(char));
+    char* g_name = malloc(strlen(gr->gr_name) * sizeof(char));
+    strcpy(o_name, pw->pw_name);
+    strcpy(g_name, gr->gr_name);
+    strcpy(filename, entry->d_name);
+
+    files[position++] = (struct file){.owner = o_name,
+                                      .group = g_name,
                                       .info = f_type_res,
                                       .perms = perms,
                                       .modified_time = modified_time,
-                                      .filename = entry->d_name};
+                                      .filename = filename};
   }
 
   for (int i = 0; i < position; i++)
