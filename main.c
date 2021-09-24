@@ -103,16 +103,26 @@ struct file {
   char* filename;
   char* perms;
   char* modified_time;
+  char* f_size;
   struct owner_info info;
 };
 
 void
-handle_individual_file(struct file f, int longest_group, int longest_owner) {
+handle_individual_file(struct file f, int longest_size, int longest_group,
+                       int longest_owner) {
   printf("%s%c%s %s%s ", f.info.color, f.info.letter, f.perms, dark_yellow,
          f.group);
+
   for (int i = 0; i < (longest_group - strlen(f.group)); i++)
     printf(" ");
-  printf("%s ", f.owner);
+
+  printf("%s%s ", f.info.is_dir ? light_black : light_green, f.f_size);
+
+  for (int i = 0; i < (longest_size - strlen(f.f_size)); i++)
+    printf(" ");
+
+  printf("%s%s ", dark_yellow, f.owner);
+
   for (int i = 0; i < (longest_owner - strlen(f.owner)); i++)
     printf(" ");
 
@@ -122,6 +132,35 @@ handle_individual_file(struct file f, int longest_group, int longest_owner) {
   free(f.group);
   free(f.owner);
   free(f.filename);
+  free(f.f_size);
+}
+
+int
+round_size(int n) {
+  float d = n * 100.0;
+  int i = d + 0.5;
+  d = i / 100;
+  return d;
+}
+
+char*
+size_to_str(uintmax_t size) {
+  static const char* sizes[] = {"B", "KB", "MB", "GB"};
+
+  int div = 0;
+  size_t rem = 0;
+
+  while (size >= 1024 && div < 4) {
+    rem = (size % 1024);
+    div++;
+    size /= 1024;
+  }
+
+  float size_d = size + rem / 1024.;
+  char* f_size = malloc(sizeof(char) * 10);
+  sprintf(f_size, "%d %s", round_size(size_d), sizes[div]);
+
+  return f_size;
 }
 
 void
@@ -139,7 +178,7 @@ iterate_dir(const char* path) {
   int position = 0;
   struct file* files = malloc(10 * sizeof(struct file));
 
-  int longest_group = 0, longest_owner = 0;
+  int longest_size = 0, longest_group = 0, longest_owner = 0;
 
   while ((entry = readdir(directory))) {
     char buf[PATH_MAX + 1];
@@ -156,14 +195,29 @@ iterate_dir(const char* path) {
     struct passwd* pw = getpwuid(stat_res.st_uid);
     struct group* gr = getgrgid(stat_res.st_gid);
 
+    char* dir_size = malloc(sizeof(char) * 1);
+    strcpy(dir_size, "-");
+
+    char* f_size;
+
+    if (f_type_res.is_dir)
+      f_size = dir_size;
+    else {
+      f_size = size_to_str(stat_res.st_size);
+      free(dir_size);
+    }
+
     if (strlen(gr->gr_name) > longest_group)
       longest_group = strlen(gr->gr_name);
 
     if (strlen(pw->pw_name) > longest_owner)
       longest_owner = strlen(pw->pw_name);
 
+    if (strlen(f_size) > longest_size)
+      longest_size = strlen(f_size);
+
     if (position == size) {
-      size += 10;
+      size += 5;
       struct file* realloc_files = realloc(files, (size * sizeof(struct file)));
       if (realloc_files)
         files = realloc_files;
@@ -187,12 +241,14 @@ iterate_dir(const char* path) {
                                       .group = g_name,
                                       .info = f_type_res,
                                       .perms = perms,
+                                      .f_size = f_size,
                                       .modified_time = modified_time,
                                       .filename = filename};
   }
 
   for (int i = 0; i < position; i++)
-    handle_individual_file(files[i], longest_group, longest_owner);
+    handle_individual_file(files[i], longest_size, longest_group,
+                           longest_owner);
 
   closedir(directory);
   free(files);
