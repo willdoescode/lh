@@ -52,7 +52,7 @@ file_perm_str(struct stat f_stat) {
 }
 
 void
-f_type(mode_t mode, struct owner_info* owner) {
+mode_info(mode_t mode, struct owner_info* owner) {
   switch (mode & S_IFMT) {
   case S_IFBLK:
     owner->letter = 'b';
@@ -132,7 +132,8 @@ handle_individual_file(struct file f, int longest_size, int longest_group,
   free(f.group);
   free(f.owner);
   free(f.filename);
-  free(f.f_size);
+  if (f.info.is_dir)
+    free(f.f_size);
 }
 
 int
@@ -157,13 +158,21 @@ size_to_str(uintmax_t size) {
   }
 
   float size_d = size + rem / 1024.;
-  char* f_size = malloc(sizeof(char) * 10);
+  static char f_size[10];
   sprintf(f_size, "%d %s", round_size(size_d), sizes[div]);
 
   return f_size;
 }
 
-void
+struct files {
+  struct file* files;
+  int longest_size;
+  int longest_group;
+  int longest_owner;
+  int length;
+};
+
+struct files
 iterate_dir(const char* path) {
   struct dirent* entry;
 
@@ -188,7 +197,7 @@ iterate_dir(const char* path) {
     stat(buf, &stat_res);
 
     struct owner_info f_type_res;
-    f_type(stat_res.st_mode, &f_type_res);
+    mode_info(stat_res.st_mode, &f_type_res);
 
     char* perms = file_perm_str(stat_res);
 
@@ -231,11 +240,13 @@ iterate_dir(const char* path) {
       modified_time[0] = ' ';
 
     char* filename = malloc(entry->d_namlen * sizeof(char));
-    char* o_name = malloc(strlen(pw->pw_name) * sizeof(char));
-    char* g_name = malloc(strlen(gr->gr_name) * sizeof(char));
-    strcpy(o_name, pw->pw_name);
-    strcpy(g_name, gr->gr_name);
     strcpy(filename, entry->d_name);
+
+    char* o_name = malloc(strlen(pw->pw_name) * sizeof(char));
+    strcpy(o_name, pw->pw_name);
+
+    char* g_name = malloc(strlen(gr->gr_name) * sizeof(char));
+    strcpy(g_name, gr->gr_name);
 
     files[position++] = (struct file){.owner = o_name,
                                       .group = g_name,
@@ -246,12 +257,13 @@ iterate_dir(const char* path) {
                                       .filename = filename};
   }
 
-  for (int i = 0; i < position; i++)
-    handle_individual_file(files[i], longest_size, longest_group,
-                           longest_owner);
-
   closedir(directory);
-  free(files);
+
+  return (struct files){.files = files,
+                        .length = position,
+                        .longest_size = longest_size,
+                        .longest_group = longest_group,
+                        .longest_owner = longest_owner};
 }
 
 int
@@ -268,10 +280,20 @@ validate_path(char* path, int is_dir) {
   }
 }
 
+void
+handle_files(struct files f) {
+  for (int i = 0; i < f.length; i++) {
+    handle_individual_file(f.files[i], f.longest_size, f.longest_group,
+                           f.longest_owner);
+  }
+
+  free(f.files);
+}
+
 int
 main(int argc, char** argv) {
   if (argc <= 1) {
-    iterate_dir("./");
+    handle_files(iterate_dir("./"));
     return 0;
   }
 
@@ -279,7 +301,8 @@ main(int argc, char** argv) {
     int is_dir = is_directory(argv[i]);
     validate_path(argv[i], is_dir);
     if (is_dir) {
-      iterate_dir(argv[i]);
+      handle_files(iterate_dir(argv[i]));
+
       continue;
     }
   }
