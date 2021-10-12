@@ -110,21 +110,25 @@ struct file {
 void
 handle_individual_file(struct file f, int longest_size, int longest_group,
                        int longest_owner) {
-  printf("%s%c%s %s%s ", f.info.color, f.info.letter, f.perms, dark_yellow,
-         f.group);
 
-  for (int i = 0; i < (longest_group - strlen(f.group)); i++)
-    printf(" ");
 
+  printf("%s%c%s %s ", f.info.color, f.info.letter, f.perms, dark_yellow);
+  
   printf("%s%s ", f.info.is_dir ? light_black : light_green, f.f_size);
 
   for (int i = 0; i < (longest_size - strlen(f.f_size)); i++)
+    printf(" ");
+
+  printf("%s%s ", light_yellow, f.group);
+
+  for (int i = 0; i < (longest_group - strlen(f.group)); i++)
     printf(" ");
 
   printf("%s%s ", dark_yellow, f.owner);
 
   for (int i = 0; i < (longest_owner - strlen(f.owner)); i++)
     printf(" ");
+
 
   printf("%s%s %s%s%s\n", light_blue, f.modified_time, f.info.color, f.filename,
          end);
@@ -180,8 +184,8 @@ iterate_dir(const char* path) {
   DIR* directory = opendir(path);
 
   /* Skip . and .. */
-  readdir(directory);
-  readdir(directory);
+  (void)readdir(directory);
+  (void)readdir(directory);
 
   int size = 10;
   int position = 0;
